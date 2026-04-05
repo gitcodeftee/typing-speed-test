@@ -18,7 +18,7 @@ https://gitcodeftee.github.io/typing-speed-test/
 ## 🧠 How It Works
 
 - A random quote is displayed on screen  
-- User input is compared **character-by-character**  
+- User input is compared character-by-character  
 - Correct characters are highlighted in green, incorrect ones in red  
 - WPM is calculated based on words typed over time  
 - Accuracy is calculated with a penalty applied for backspace usage  
