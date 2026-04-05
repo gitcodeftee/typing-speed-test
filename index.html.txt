@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typing Speed Test</title>
+<!-- CSS structure -->
+  <style>
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: monospace;
+      background: #6f2303;
+      display: flex;
+      justify-content: center;
+      padding: 3rem 1rem;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    h1 {
+      font-family: sans-serif;
+      font-size: 22px;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+      color: #111;
+      text-align: center;
+      line-spacing: 1px;
+    }
+
+    
+    #stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat {
+      background: #f0f0f0;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-family: sans-serif;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 500;
+      color: #111;
+    }
+
+    
+    #quote-box {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 18px;
+      line-height: 1.8;
+      min-height: 80px;
+    }
+
+    
+    #input-area {
+      width: 100%;
+      font-family: monospace;
+      font-size: 16px;
+      padding: 12px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: none;
+      outline: none;
+      color: #111;
+      background: #fff;
+    }
+
+    #input-area:focus {
+      box-shadow: 0 0 0 2px #378ADD;
+      border-color: transparent;
+    }
+
+    #input-area:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    
+    #controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 1rem;
+    }
+
+    button {
+      font-family: sans-serif;
+      font-size: 14px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: transparent;
+      color: #111;
+      cursor: pointer;
+    }
+
+    button:hover  { background: #f0f0f0; }
+    button:active { transform: scale(0.98); }
+
+   
+    .char-correct { color: #1D9E75; }
+    .char-wrong   { color: #E24B4A; background: rgba(226,75,74,0.12); border-radius: 2px; }
+    .char-pending { color: #aaa; }
+    .char-cursor  { border-left: 2px solid #111; }
+
+    
+    #result-msg {
+      margin-top: 1rem;
+      font-family: sans-serif;
+      font-size: 14px;
+      color: #0f0a0a;
+      min-height: 20px;
+    }
+  </style>
+  <!-- HTML structure -->
+</head>
+<body>
+
+  <div id="app">
+
+    <h1>Typing Speed Test</h1>
+
+    <div id="stats">
+      <div class="stat">
+        <div class="stat-label">WPM</div>
+        <div class="stat-value" id="wpm">—</div>
+      </div>
+      <div class="stat">
+  <div class="stat-label">Backspaces</div>
+  <div class="stat-value" id="backspaces">0</div>
+</div>
+      <div class="stat">
+        <div class="stat-label">Accuracy</div>
+        <div class="stat-value" id="acc">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Time left</div>
+        <div class="stat-value" id="timer">20s</div>
+      </div>
+    </div>
+
+    <div id="quote-box"></div>
+
+    <textarea id="input-area" rows="2" placeholder="Start typing to begin the test…"
+      spellcheck="false" autocomplete="off" autocorrect="off">
+    </textarea>
+
+    <div id="controls">
+      <button id="restart-btn">Restart</button>
+      <button id="new-btn">New text</button>
+    </div>
+
+    <div id="result-msg"></div>
+
+  </div>
+  <!-- JAVASCRIPT structure -->
+  <script>
+    const QUOTES = [
+      "The quick brown fox jumps over the lazy dog near the river bank.",
+      "Practice makes perfect, and every keystroke brings you closer to mastery.",
+      "Speed is nothing without accuracy; learn to type correctly before typing fast.",
+      "The best way to predict the future is to invent it yourself.",
+      "Consistency is the foundation of all great skills and habits in life.",
+      "A journey of a thousand miles begins with a single step forward.",
+      "Code is like humor. When you have to explain it, it is bad.",
+      "First solve the problem, then write the code as clearly as possible.",
+      "Simplicity is the soul of efficiency, so keep it clean and concise.",
+      "Learning to type well is one of the most valuable skills you can develop."
+    ];
+    //variable initialization
+    let penalty=0;
+    let backspaces = 0;
+    let quote     = "";
+    let startTime = null;
+    let timer     = null;
+    let timeLeft  = 20;
+    let done      = false;
+
+//element references
+    const quoteBox = document.getElementById("quote-box");
+    const inputEl  = document.getElementById("input-area");
+    const wpmEl    = document.getElementById("wpm");
+    const accEl    = document.getElementById("acc");
+    const timerEl  = document.getElementById("timer");
+    const resultEl = document.getElementById("result-msg");
+    const backspaceEl = document.getElementById("backspaces");
+//generating quote
+    function pickQuote() {
+      return QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    }
+//rendering quote with correct/wrong/pending characters
+    function renderQuote(typed) {
+      let html = "";
+      for (let i = 0; i < quote.length; i++) {
+        let cls = "char-pending";
+        if (i < typed.length) {
+          cls = typed[i] === quote[i] ? "char-correct" : "char-wrong";
+        } else if (i === typed.length) {
+          cls = "char-pending char-cursor";
+        }
+        html += `<span class="${cls}">${quote[i]}</span>`;
+      }
+      quoteBox.innerHTML = html;
+    }
+    inputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Backspace") {
+    backspaces++;
+    backspaceEl.textContent = backspaces;
+  }
+});
+
+//WPM calculation
+    function calcWpm(typed) {
+      const elapsed = (Date.now() - startTime) / 20000;
+      const words = typed.trim().split(" ").filter(Boolean).length;
+      return elapsed > 0 ? Math.round(words / elapsed) : 0;
+    }
+//accuracy calculation with penalty for backspaces
+   function calcAcc(typed) {
+  if (typed.length === 0) return 100;
+
+  let correct = 0;
+  for (let i = 0; i < typed.length; i++) {
+    if (i < quote.length && typed[i] === quote[i]) correct++;
+  }
+
+  let rawAcc = (correct / typed.length) * 100;
+
+  // penalty
+  penalty = backspaces * 0.5; // 0.5% penalty per backspace
+  return Math.max(0, Math.round(rawAcc - penalty));
+}
+//test starting function
+    function startCountdown() {
+      timer = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft + "s";
+        const typed = inputEl.value;
+        wpmEl.textContent = calcWpm(typed);
+        accEl.textContent = calcAcc(typed) + "%";
+        if (timeLeft <= 0) endTest();
+      }, 1000);
+    }
+//test ending function
+    function endTest() {
+      clearInterval(timer);
+      done = true;
+      inputEl.disabled = true;
+      const typed = inputEl.value;
+      wpmEl.textContent   = calcWpm(typed);
+      accEl.textContent   = calcAcc(typed) + "%";
+      timerEl.textContent = "0s";
+      resultEl.textContent = `Done! You typed ${calcWpm(typed)} WPM with ${calcAcc(typed)}% accuracy. Penalty: ${penalty}% for ${backspaces} backspaces.`;
+    }
+//reinitialising
+    function init(newText) {
+      clearInterval(timer);
+      quote     = newText || pickQuote();
+      startTime = null;
+      timeLeft  = 20;
+      done      = false;
+      inputEl.value        = "";
+      inputEl.disabled     = false;
+      wpmEl.textContent    = "—";
+      accEl.textContent    = "—";
+      timerEl.textContent  = "20s";
+      resultEl.textContent = "";
+      renderQuote("");
+      inputEl.focus();
+       backspaces = 0;
+backspaceEl.textContent = "0";
+    }
+
+    inputEl.addEventListener("input", () => {
+      if (done) return;
+      const typed = inputEl.value;
+      if (!startTime && typed.length > 0) {
+        startTime = Date.now();
+        startCountdown();
+      }
+      renderQuote(typed);
+      wpmEl.textContent = startTime ? calcWpm(typed) : "—";
+      accEl.textContent = startTime ? calcAcc(typed) + "%" : "—";
+      if (typed === quote) endTest();
+    });
+
+    document.getElementById("restart-btn").addEventListener("click", () => init(quote));
+    document.getElementById("new-btn").addEventListener("click", () => init());
+
+    init();
+    
+     
+    //end of javascript code
+  </script>
+
+</body>
+</html>
