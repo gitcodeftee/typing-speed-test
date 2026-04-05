@@ -4,7 +4,7 @@ A real-time typing speed test built using HTML, CSS, and JavaScript.
 
 ## 🌐 Live Demo
 
-
+https://gitcodeftee.github.io/typing-speed-test/
 
 ## 🚀 Features
 
